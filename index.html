@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Satisfaction - Key Drivers Analysis</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background-color: #3366ff;
+      color: white;
+      padding: 1.2rem 2rem;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(51,102,255,0.3);
+    }
+    header h1 {
+      margin: 0;
+      font-weight: 600;
+      font-size: 1.8rem;
+    }
+    main {
+      flex: 1;
+      max-width: 900px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem 2.5rem;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    h2 {
+      border-bottom: 3px solid #3366ff;
+      padding-bottom: 0.25rem;
+      margin-bottom: 1rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    textarea {
+      width: 100%;
+      height: 140px;
+      font-family: monospace, monospace;
+      font-size: 14px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+      resize: vertical;
+      box-sizing: border-box;
+      transition: border-color 0.3s ease;
+    }
+    textarea:focus {
+      border-color: #3366ff;
+      outline: none;
+    }
+    .buttons {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    button {
+      background-color: #3366ff;
+      border: none;
+      color: white;
+      padding: 0.65rem 1.5rem;
+      font-weight: 600;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 1rem;
+      box-shadow: 0 5px 15px rgba(51,102,255,0.4);
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #254edb;
+    }
+    #results {
+      margin-top: 2rem;
+    }
+    #results ul {
+      padding-left: 20px;
+    }
+    #results li {
+      margin-bottom: 0.3rem;
+      font-size: 1rem;
+    }
+    canvas {
+      margin-top: 2rem;
+      max-width: 100%;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: #aaa;
+      font-size: 0.85rem;
+      background: #fafafa;
+      margin-top: auto;
+    }
+    pre {
+      background: #e9f0ff;
+      padding: 1rem;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+      max-height: 160px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Customer Satisfaction - Key Drivers Analysis</h1>
+  </header>
+  <main>
+    <section>
+      <h2>How it works</h2>
+      <p>Paste your survey data in JSON format below (array of objects), where each object contains survey factor scores and a "Satisfaction" score. Then click "Analyze" to discover the strongest drivers of customer satisfaction based on correlation.</p>
+      <p>Here is a sample dataset you can load for testing.</p>
+      <pre>[<br>  {"Product Quality":8,"Customer Service":7,"Price":6,"Ease of Use":9,"Satisfaction":8},<br>  {"Product Quality":9,"Customer Service":8,"Price":7,"Ease of Use":8,"Satisfaction":9},<br>  {"Product Quality":7,"Customer Service":6,"Price":5,"Ease of Use":7,"Satisfaction":7},<br>  {"Product Quality":6,"Customer Service":5,"Price":8,"Ease of Use":6,"Satisfaction":6},<br>  {"Product Quality":9,"Customer Service":9,"Price":7,"Ease of Use":8,"Satisfaction":9}<br>]</pre>
+    </section>
+    <section>
+      <label for="dataInput">Survey Data (JSON format)</label>
+      <textarea id="dataInput" aria-label="Survey Data Input"></textarea>
+      <div class="buttons">
+        <button id="loadSampleBtn" type="button">Load Sample Data</button>
+        <button id="analyzeBtn" type="button">Analyze Data</button>
+      </div>
+    </section>
+    <section id="results" style="display:none;">
+      <h2>Analysis Results</h2>
+      <div id="correlationList"></div>
+      <canvas id="correlationChart"></canvas>
+    </section>
+  </main>
+  <footer>
+    &copy; 2024 Customer Satisfaction Analysis by BLACKBOXAI
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const sampleData = [
+      {"Product Quality":8,"Customer Service":7,"Price":6,"Ease of Use":9,"Satisfaction":8},
+      {"Product Quality":9,"Customer Service":8,"Price":7,"Ease of Use":8,"Satisfaction":9},
+      {"Product Quality":7,"Customer Service":6,"Price":5,"Ease of Use":7,"Satisfaction":7},
+      {"Product Quality":6,"Customer Service":5,"Price":8,"Ease of Use":6,"Satisfaction":6},
+      {"Product Quality":9,"Customer Service":9,"Price":7,"Ease of Use":8,"Satisfaction":9},
+      {"Product Quality":5,"Customer Service":7,"Price":6,"Ease of Use":5,"Satisfaction":5},
+      {"Product Quality":8,"Customer Service":8,"Price":7,"Ease of Use":9,"Satisfaction":8},
+      {"Product Quality":7,"Customer Service":7,"Price":6,"Ease of Use":7,"Satisfaction":7},
+      {"Product Quality":6,"Customer Service":6,"Price":7,"Ease of Use":6,"Satisfaction":6},
+      {"Product Quality":9,"Customer Service":8,"Price":8,"Ease of Use":9,"Satisfaction":9}
+    ];
+    const dataInput = document.getElementById('dataInput');
+    const loadSampleBtn = document.getElementById('loadSampleBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const resultsSection = document.getElementById('results');
+    const correlationList = document.getElementById('correlationList');
+    const chartCanvas = document.getElementById('correlationChart');
+    let chartInstance = null;
+
+    function pearsonCorrelation(x, y) {
+      const n = x.length;
+      const avgX = x.reduce((a, b) => a + b, 0) / n;
+      const avgY = y.reduce((a, b) => a + b, 0) / n;
+      let numerator = 0;
+      let denomX = 0;
+      let denomY = 0;
+      for (let i = 0; i < n; i++) {
+        const dx = x[i] - avgX;
+        const dy = y[i] - avgY;
+        numerator += dx * dy;
+        denomX += dx * dx;
+        denomY += dy * dy;
+      }
+      if (denomX === 0 || denomY === 0) return 0;
+      return numerator / Math.sqrt(denomX * denomY);
+    }
+
+    function analyzeData(data) {
+      const keys = Object.keys(data[0]).filter(k => k !== 'Satisfaction');
+      const satisfaction = data.map(d => d.Satisfaction);
+      const correlations = keys.map(key => {
+        const values = data.map(d => d[key]);
+        return { factor: key, corr: pearsonCorrelation(values, satisfaction) };
+      });
+      correlations.sort((a, b) => Math.abs(b.corr) - Math.abs(a.corr));
+      return correlations;
+    }
+
+    function renderResults(correlations) {
+      let html = '<ul>';
+      correlations.forEach(({factor, corr}) => {
+        html += `<li><strong>${factor}:</strong> ${corr.toFixed(3)}</li>`;
+      });
+      html += '</ul>';
+      correlationList.innerHTML = html;
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+      chartInstance = new Chart(chartCanvas, {
+        type: 'bar',
+        data: {
+          labels: correlations.map(c => c.factor),
+          datasets: [{
+            label: 'Absolute Correlation with Satisfaction',
+            data: correlations.map(c => Math.abs(c.corr)),
+            backgroundColor: '#3366ff'
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 1,
+              title: {
+                display: true,
+                text: 'Magnitude of Correlation'
+              }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const idx = context.dataIndex;
+                  return 'Correlation: ' + correlations[idx].corr.toFixed(3);
+                }
+              }
+            },
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    loadSampleBtn.addEventListener('click', () => {
+      dataInput.value = JSON.stringify(sampleData, null, 2);
+      resultsSection.style.display = 'none';
+    });
+
+    analyzeBtn.addEventListener('click', () => {
+      let input;
+      try {
+        input = JSON.parse(dataInput.value);
+        if (!Array.isArray(input) || input.length === 0) {
+          alert('Input must be a non-empty JSON array.');
+          return;
+        }
+        for (const item of input) {
+          if (typeof item !== 'object' || item === null) {
+            alert('Each item must be an object.');
+            return;
+          }
+          if (!item.hasOwnProperty('Satisfaction')) {
+            alert('Each object must contain a "Satisfaction" key.');
+            return;
+          }
+          // Verify all attributes except Satisfaction are numbers
+          for (const key in item) {
+            if (key !== 'Satisfaction') {
+              if (typeof item[key] !== 'number') {
+                alert(`All survey factor values must be numbers. Problem at factor "${key}".`);
+                return;
+              }
+            }
+          }
+          if (typeof item['Satisfaction'] !== 'number') {
+            alert(`"Satisfaction" values must be numbers.`);
+            return;
+          }
+        }
+      } catch (e) {
+        alert('Invalid JSON input.');
+        return;
+      }
+      const correlations = analyzeData(input);
+      renderResults(correlations);
+      resultsSection.style.display = 'block';
+      // Scroll to results
+      resultsSection.scrollIntoView({behavior: 'smooth'});
+    });
+  </script>
+</body>
+</html>
+
